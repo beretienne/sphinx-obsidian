@@ -70,7 +70,7 @@ def wikilink(state: StateInline, silent: bool) -> bool:
             pos = res.pos
         else:
             href = ""
-            # start = pos -> TO BE CHECKED
+
         # [[  <href>  | link label ]]
         #           ^^ skipping these spaces
         while pos < maximum:
@@ -78,17 +78,32 @@ def wikilink(state: StateInline, silent: bool) -> bool:
             if not isSpace(code) and code != 0x0A:
                 break
             pos += 1
-        # valid link found
+
         state.pos = labelStart = labelEnd = pos
         if (code == 0x7C): # |
+            # [[  <href>  | link label ]]
+            #              ^ skipping these spaces
+            while pos < maximum:
+                code = state.srcCharCode[pos]
+                if not isSpace(code) and code != 0x0A:
+                    break
+                pos += 1
             labelEnd = helpers.parseLinkLabel(state, state.pos)
-            # parser failed to find ']', so it's not a valid link label
+            # parser failed to find ']]', so it's not a valid link label
             if labelEnd < 0:
                 return False
         else:
-            pass # no label has been found
-            
-            pos = labelEnd + 1
+            while pos < maximum - 1:
+                code = state.srcCharCode[pos]
+                if not isSpace(code) and code != 0x0A:
+                    break
+                pos += 1
+            if (state.srcCharCode[state.pos] == 0x5D and state.srcCharCode[state.pos + 1] == 0x5D):  # find ]]
+                parseReference = True # no label has been found
+            else:
+                return False
+
+            pos += 2
     else:
         parseReference = True
 
@@ -143,7 +158,7 @@ def wikilink(state: StateInline, silent: bool) -> bool:
         if label and state.md.options.get("store_labels", False):
             token.meta["label"] = label
 
-#        state.md.inline.tokenize(state)
+        state.md.inline.tokenize(state)
 
         token = state.push("link_close", "a", -1)
 

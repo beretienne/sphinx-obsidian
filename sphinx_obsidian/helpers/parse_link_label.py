@@ -2,7 +2,7 @@
 Parse link label
 
 this function assumes that state.pos = characters ("|") 
-returns the end of the label
+returns the label end
 
 """
 from markdown_it.rules_inline import StateInline
